@@ -1,5 +1,8 @@
 class Board {
 
+    cells;
+    size;
+
     constructor(size) {
         this.size = size;
         this.cells = Array(8);
@@ -66,16 +69,14 @@ class Board {
             move.piece.row === row1
             && move.piece.col === col1
             && move.nextPos.row === row2
-            && move.nextPos.col === col2
-        )) {
+            && move.nextPos.col === col2)
+        ) {
             return;
         }
         let piece = this.cells[row1][col1];
-        let nextPos = this.cells[row2][col2];
-        if (nextPos === 'vacant' && piece !== 'unplayable' && piece.color === playerColor) {
-            this.cells[row1][col1] = 'vacant';
-            this.cells[row2][col2] = piece;
-        }
+
+        this.cells[row1][col1] = 'vacant';
+        this.cells[row2][col2] = piece;
     }
 
     // Big and ugly method. Very temporary. Does not account for kings.
@@ -85,46 +86,31 @@ class Board {
         for (let i = 0; i < this.cells.length; i++) {
             for (let j = 0; j < this.cells[i].length; j++) {
                 let cell = this.cells[i][j];
-                if (cell !== 'unplayable' && cell !== 'vacant' && cell.color === playerColor) {
-                    let row, col;
-                    row = i - 1;
-                    if (row >= 0) {
-                        col = j - 1;
-                        if (col >= 0) {
-                            if (this.cells[row][col] === 'vacant') {
-                                legalMoves.push({
-                                    piece: {row: i, col: j},
-                                    nextPos: {row, col}
-                                })
-                            } else if (this.cells[row][col].color !== playerColor
-                                && row - 1 >= 0
-                                && col - 1 >= 0
-                                && this.cells[row-1][col-1] === 'vacant') {
-                                requiredMoves.push({
-                                    piece: {row: i, col: j},
-                                    nextPos: {row: row-1, col: col-1}
-                                });
-                            }
-                        }
-                        col = j + 1;
-                        if (col < this.cells.length) {
-                            if (this.cells[row][col] === 'vacant') {
-                                legalMoves.push({
-                                    piece: {row: i, col: j},
-                                    nextPos: {row, col}
-                                })
-                            } else if (this.cells[row][col].color !== playerColor
-                                && row - 1 >= 0
-                                && col + 1 < this.cells.length
-                                && this.cells[row-1][col+1] === 'vacant') {
-                                requiredMoves.push({
-                                    piece: {row: i, col: j},
-                                    nextPos: {row: row-1, col: col+1}
-                                });
-                            }
-                        }
-                    }
+                if (cell === 'unplayable' || cell === 'vacant' || cell.color !== playerColor) {
+                    continue;
                 }
+                const optns = [{vert: -1, hor: 1}, {vert: -1, hor: -1}]; // direction options
+                optns.forEach(o => {
+                    let row = i + o.vert, col = j + o.hor;
+                    if (row < 0 || col < 0 || row >= this.cells.length || col >= this.cells.length) return;
+                    if (this.cells[row][col] === 'vacant') {
+                        legalMoves.push({
+                            piece: {row: i, col: j},
+                            nextPos: {row, col}
+                        })
+                    } else if (this.cells[row][col].color !== playerColor
+                        && row + o.vert >= 0
+                        && col + o.hor >= 0
+                        && row + o.vert < this.cells.length
+                        && col + o.hor < this.cells.length
+                        && this.cells[row + o.vert][col + o.hor] === 'vacant'
+                    ) {
+                        requiredMoves.push({
+                            piece: {row: i, col: j},
+                            nextPos: {row: row + o.vert, col: col + o.hor}
+                        });
+                    }
+                });
             }
         }
         if (requiredMoves.length > 0) return requiredMoves;
